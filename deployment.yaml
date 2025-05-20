@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: clickhouse
+  namespace: clickhouse
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clickhouse
+  template:
+    metadata:
+      labels:
+        app: clickhouse
+    spec:
+      volumes:
+    
+        - name: clickhouse-config-users
+          configMap:
+            name: clickhouse-config-users
+
+        - name: clickhouse-config-server
+          configMap:
+            name: clickhouse-config-server
+
+        - name: clickhouse-storage
+          persistentVolumeClaim:
+            claimName: pvc-clickhouse
+      containers:
+      - name: clickhouse
+        image: clickhouse/clickhouse-server:24.12-alpine
+        ports:
+        - containerPort: 8123
+        - containerPort: 9000
+
+        env:
+        - name: CLICKHOUSE_USER
+          value: "test"
+        - name: CLICKHOUSE_PASSWORD
+          value: "test"
+
+        livenessProbe:
+          httpGet:
+            path: /ping
+            port: 8123
+          initialDelaySeconds: 5
+          periodSeconds: 30
+
+        readinessProbe:
+          tcpSocket:
+            port: 9000
+          initialDelaySeconds: 5
+          periodSeconds: 30
+
+        resources:
+          requests:
+            cpu: 300m
+            memory: 2Gi
+
+        volumeMounts:
+            - name: clickhouse-config-users
+              mountPath: /etc/clickhouse-server/config_users.xml
+              subPath: config_users.xml
+
+            - name: clickhouse-config-server
+              mountPath: /etc/clickhouse-server/config.d/config_server.xml
+              subPath: config_server.xml
+
+            - name: clickhouse-storage
+              mountPath: /var/lib/clickhouse
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clickhouse-svc
+  namespace: clickhouse
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+spec:
+  selector:
+    app: clickhouse
+  type: 
+  ports:
+  # - port: 9000
+  #   targetPort: 9000
+  #   protocol: TCP
+  #   name: http
+  - port: 8123
+    targetPort: 8123
+    protocol: TCP
+    name: http1

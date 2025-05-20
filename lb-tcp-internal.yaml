@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: clickhouse-lb-tcp-internal
+  namespace: clickhouse
+  annotations:
+    cloud.google.com/load-balancer-type: "Internal"
+spec:
+  loadBalancerIP: 10.3.0.35
+  type: LoadBalancer
+  selector:
+    app: clickhouse
+  ports:
+  - protocol: TCP
+    port: 9000
+    targetPort: 9000

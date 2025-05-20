@@ -1,0 +1,62 @@
+# apiVersion: v1
+# kind: PersistentVolume
+# metadata:
+#   namespace: clickhouse
+#   name: clickhouse-pv
+#   labels:
+#     type: local
+# spec:
+#   capacity:
+#     storage: 6Gi
+#   accessModes:
+#     - ReadWriteMany
+#   storageClassName: standard-rwo
+#   hostPath:
+#     path: /mnt/clickhouse
+#   persistentVolumeReclaimPolicy: Retain
+
+# ---
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: clickhouse
+#   namespace: clickhouse
+# spec:
+#   accessModes:
+#     - ReadWriteMany
+#   resources:
+#     requests:
+#       storage: 8G
+---
+allowVolumeExpansion: true
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  annotations:
+    components.gke.io/component-name: pdcsi
+    components.gke.io/component-version: 0.16.18
+    components.gke.io/layer: addon
+    storageclass.kubernetes.io/is-default-class: "true"
+  labels:
+    addonmanager.kubernetes.io/mode: EnsureExists
+    k8s-app: gcp-compute-persistent-disk-csi-driver
+  name: standard-rwo-retain
+parameters:
+  type: pd-balanced
+provisioner: pd.csi.storage.gke.io
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-clickhouse
+  namespace: clickhouse
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard-rwo-retain

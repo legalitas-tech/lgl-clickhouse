@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-clickhouse-private
+  namespace: clickhouse
+  annotations:
+    kubernetes.io/ingress.class: "gce-internal"
+    networking.gke.io/load-balancer-type: Internal
+    kubernetes.io/ingress.allow-http: "true"
+    kubernetes.io/ingress.regional-static-ip-name: "internal-ip-d-clickhouse"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: clickhouse-svc 
+            port:
+              number: 8123
+
+  defaultBackend:
+    service:
+      name: clickhouse-svc 
+      port:
+        number: 8123
